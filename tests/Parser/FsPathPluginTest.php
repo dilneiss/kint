@@ -25,25 +25,13 @@
 
 namespace Kint\Test\Parser;
 
-use Kint\Object\BasicObject;
 use Kint\Parser\FsPathPlugin;
 use Kint\Parser\Parser;
 use Kint\Test\KintTestCase;
+use Kint\Zval\Value;
 
 class FsPathPluginTest extends KintTestCase
 {
-    protected function setUp()
-    {
-        \symlink(\dirname(__DIR__), __DIR__.'/testDirLink');
-        \symlink(__FILE__, __DIR__.'/testFileLink');
-    }
-
-    protected function tearDown()
-    {
-        \unlink(__DIR__.'/testDirLink');
-        \unlink(__DIR__.'/testFileLink');
-    }
-
     /**
      * @covers \Kint\Parser\FsPathPlugin::getTypes
      */
@@ -51,7 +39,7 @@ class FsPathPluginTest extends KintTestCase
     {
         $p = new FsPathPlugin();
 
-        $this->assertSame(array('string'), $p->getTypes());
+        $this->assertSame(['string'], $p->getTypes());
     }
 
     /**
@@ -66,40 +54,40 @@ class FsPathPluginTest extends KintTestCase
 
     public function fsPathProvider()
     {
-        return array(
-            'standard path' => array(
+        return [
+            'standard path' => [
                 __FILE__,
                 true,
-            ),
-            'folder' => array(
+            ],
+            'folder' => [
                 __DIR__,
                 true,
-            ),
-            'looooong' => array(
+            ],
+            'looooong' => [
                 __DIR__.\str_repeat('/testDirLink', 1000),
                 false,
-            ),
-            'string' => array(
+            ],
+            'string' => [
                 'This is just an ordinary string',
                 false,
-            ),
-            'url' => array(
+            ],
+            'url' => [
                 __DIR__.'?key=val',
                 false,
-            ),
-            'nonexistant' => array(
+            ],
+            'nonexistant' => [
                 __DIR__.'/404',
                 false,
-            ),
-            'slash' => array(
+            ],
+            'slash' => [
                 '/',
                 false,
-            ),
-            'dot' => array(
+            ],
+            'dot' => [
                 '.',
                 false,
-            ),
-        );
+            ],
+        ];
     }
 
     /**
@@ -112,7 +100,7 @@ class FsPathPluginTest extends KintTestCase
     public function testParse($path, $expect)
     {
         $p = new Parser();
-        $b = BasicObject::blank('$v', '$v');
+        $b = Value::blank('$v', '$v');
 
         $obj = $p->parse($path, clone $b);
 
@@ -123,7 +111,7 @@ class FsPathPluginTest extends KintTestCase
 
         if ($expect) {
             $this->assertInstanceOf(
-                '\\Kint\\Object\\Representation\\SplFileInfoRepresentation',
+                '\\Kint\\Zval\\Representation\\SplFileInfoRepresentation',
                 $obj->getRepresentation('splfileinfo')
             );
 
@@ -140,7 +128,7 @@ class FsPathPluginTest extends KintTestCase
     {
         $p = new Parser();
         $p->addPlugin(new FsPathPlugin());
-        $b = BasicObject::blank('$v', '$v');
+        $b = Value::blank('$v', '$v');
 
         $v = __FILE__;
 
@@ -153,5 +141,21 @@ class FsPathPluginTest extends KintTestCase
         $obj = $p->parse($path, clone $b);
 
         $this->assertNull($obj->getRepresentation('splfileinfo'));
+    }
+
+    protected function kintUp()
+    {
+        parent::kintUp();
+
+        \symlink(\dirname(__DIR__), __DIR__.'/testDirLink');
+        \symlink(__FILE__, __DIR__.'/testFileLink');
+    }
+
+    protected function kintDown()
+    {
+        parent::kintDown();
+
+        \unlink(__DIR__.'/testDirLink');
+        \unlink(__DIR__.'/testFileLink');
     }
 }

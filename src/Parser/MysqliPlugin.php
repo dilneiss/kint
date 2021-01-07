@@ -25,8 +25,9 @@
 
 namespace Kint\Parser;
 
-use Kint\Object\BasicObject;
+use Kint\Zval\Value;
 use Mysqli;
+use Throwable;
 
 /**
  * Adds support for Mysqli object parsing.
@@ -37,21 +38,21 @@ use Mysqli;
 class MysqliPlugin extends Plugin
 {
     // These 'properties' are actually globals
-    protected $always_readable = array(
+    protected $always_readable = [
         'client_version' => true,
         'connect_errno' => true,
         'connect_error' => true,
-    );
+    ];
 
     // These are readable on empty mysqli objects, but not on failed connections
-    protected $empty_readable = array(
+    protected $empty_readable = [
         'client_info' => true,
         'errno' => true,
         'error' => true,
-    );
+    ];
 
     // These are only readable on connected mysqli objects
-    protected $connected_readable = array(
+    protected $connected_readable = [
         'affected_rows' => true,
         'error_list' => true,
         'field_count' => true,
@@ -60,16 +61,15 @@ class MysqliPlugin extends Plugin
         'insert_id' => true,
         'server_info' => true,
         'server_version' => true,
-        'stat' => true,
         'sqlstate' => true,
         'protocol_version' => true,
         'thread_id' => true,
         'warning_count' => true,
-    );
+    ];
 
     public function getTypes()
     {
-        return array('object');
+        return ['object'];
     }
 
     public function getTriggers()
@@ -77,19 +77,22 @@ class MysqliPlugin extends Plugin
         return Parser::TRIGGER_COMPLETE;
     }
 
-    public function parse(&$var, BasicObject &$o, $trigger)
+    public function parse(&$var, Value &$o, $trigger)
     {
         if (!$var instanceof Mysqli) {
             return;
         }
 
-        $connected = false;
-        $empty = false;
+        try {
+            $connected = \is_string(@$var->sqlstate);
+        } catch (Throwable $t) { // @codeCoverageIgnore
+            $connected = false; // @codeCoverageIgnore
+        }
 
-        if (\is_string(@$var->sqlstate)) {
-            $connected = true;
-        } elseif (\is_string(@$var->client_info)) {
-            $empty = true;
+        try {
+            $empty = !$connected && \is_string(@$var->client_info);
+        } catch (Throwable $t) { // @codeCoverageIgnore
+            $empty = false; // @codeCoverageIgnore
         }
 
         foreach ($o->value->contents as $key => $obj) {
@@ -115,7 +118,7 @@ class MysqliPlugin extends Plugin
                 continue;
             }
 
-            $base = BasicObject::blank($obj->name, $obj->access_path);
+            $base = Value::blank($obj->name, $obj->access_path);
 
             $base->depth = $obj->depth;
             $base->owner_class = $obj->owner_class;

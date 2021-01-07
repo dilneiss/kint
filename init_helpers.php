@@ -35,7 +35,7 @@ if (!\function_exists('d')) {
     {
         $args = \func_get_args();
 
-        return \call_user_func_array(array('Kint', 'dump'), $args);
+        return \call_user_func_array(['Kint', 'dump'], $args);
     }
 
     Kint::$aliases[] = 'd';
@@ -79,7 +79,7 @@ if (!\function_exists('s')) {
      */
     function s()
     {
-        if (!Kint::$enabled_mode) {
+        if (false === Kint::$enabled_mode) {
             return 0;
         }
 
@@ -93,7 +93,7 @@ if (!\function_exists('s')) {
         }
 
         $args = \func_get_args();
-        $out = \call_user_func_array(array('Kint', 'dump'), $args);
+        $out = \call_user_func_array(['Kint', 'dump'], $args);
 
         Kint::$enabled_mode = $stash;
 

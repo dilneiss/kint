@@ -25,24 +25,14 @@
 
 namespace Kint\Test\Parser;
 
-use Kint\Object\BasicObject;
 use Kint\Parser\Parser;
 use Kint\Parser\TracePlugin;
+use Kint\Zval\Value;
 use PHPUnit\Framework\TestCase;
 
 class TracePluginTest extends TestCase
 {
     protected $blacklist_stash;
-
-    protected function setUp()
-    {
-        $this->blacklist_stash = TracePlugin::$blacklist;
-    }
-
-    protected function tearDown()
-    {
-        TracePlugin::$blacklist = $this->blacklist_stash;
-    }
 
     /**
      * @covers \Kint\Parser\TracePlugin::parse
@@ -54,13 +44,13 @@ class TracePluginTest extends TestCase
 
         $bt = \debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 
-        $o = BasicObject::blank();
+        $o = Value::blank();
 
         $o = $p->parse($bt, $o);
 
         $this->assertContains('trace', $o->hints);
-        $this->assertInstanceOf('Kint\\Object\\TraceObject', $o);
-        $this->assertInstanceOf('Kint\\Object\\TraceFrameObject', $o->value->contents[0]);
+        $this->assertInstanceOf('Kint\\Zval\\TraceValue', $o);
+        $this->assertInstanceOf('Kint\\Zval\\TraceFrameValue', $o->value->contents[0]);
     }
 
     /**
@@ -69,7 +59,7 @@ class TracePluginTest extends TestCase
     public function testParseMismatch()
     {
         $bt = \debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-        $b = BasicObject::blank();
+        $b = Value::blank();
         $parser = new Parser();
         $plugin = new TracePlugin();
 
@@ -95,9 +85,9 @@ class TracePluginTest extends TestCase
     {
         $p = new TracePlugin();
 
-        $b = BasicObject::blank();
+        $b = Value::blank();
         $o = clone $b;
-        $v = array();
+        $v = [];
 
         $p->parse($v, $o, Parser::TRIGGER_SUCCESS);
 
@@ -116,7 +106,7 @@ class TracePluginTest extends TestCase
         $p = new Parser();
         $p->addPlugin(new TracePlugin());
 
-        $b = BasicObject::blank();
+        $b = Value::blank();
 
         $o = $p->parse($shortbt, clone $b);
 
@@ -124,7 +114,7 @@ class TracePluginTest extends TestCase
             ++$frame->name;
         }
 
-        TracePlugin::$blacklist[] = array(__CLASS__, __FUNCTION__);
+        TracePlugin::$blacklist[] = [__CLASS__, __FUNCTION__];
 
         $this->assertEquals($o->value, $p->parse($bt, clone $b)->value);
     }
@@ -137,7 +127,21 @@ class TracePluginTest extends TestCase
     {
         $p = new TracePlugin();
 
-        $this->assertSame(array('array'), $p->getTypes());
+        $this->assertSame(['array'], $p->getTypes());
         $this->assertSame(Parser::TRIGGER_SUCCESS, $p->getTriggers());
+    }
+
+    protected function kintUp()
+    {
+        parent::kintUp();
+
+        $this->blacklist_stash = TracePlugin::$blacklist;
+    }
+
+    protected function kintDown()
+    {
+        parent::kintDown();
+
+        TracePlugin::$blacklist = $this->blacklist_stash;
     }
 }

@@ -25,18 +25,18 @@
 
 namespace Kint\Parser;
 
-use Kint\Object\BasicObject;
-use Kint\Object\TraceFrameObject;
-use Kint\Object\TraceObject;
 use Kint\Utils;
+use Kint\Zval\TraceFrameValue;
+use Kint\Zval\TraceValue;
+use Kint\Zval\Value;
 
 class TracePlugin extends Plugin
 {
-    public static $blacklist = array('spl_autoload_call');
+    public static $blacklist = ['spl_autoload_call'];
 
     public function getTypes()
     {
-        return array('array');
+        return ['array'];
     }
 
     public function getTriggers()
@@ -44,19 +44,20 @@ class TracePlugin extends Plugin
         return Parser::TRIGGER_SUCCESS;
     }
 
-    public function parse(&$var, BasicObject &$o, $trigger)
+    public function parse(&$var, Value &$o, $trigger)
     {
         if (!$o->value) {
             return;
         }
 
+        /** @var array[] $trace Psalm workaround */
         $trace = $this->parser->getCleanArray($var);
 
         if (\count($trace) !== \count($o->value->contents) || !Utils::isTrace($trace)) {
             return;
         }
 
-        $traceobj = new TraceObject();
+        $traceobj = new TraceValue();
         $traceobj->transplant($o);
         $rep = $traceobj->value;
 
@@ -64,7 +65,7 @@ class TracePlugin extends Plugin
 
         Utils::normalizeAliases(self::$blacklist);
 
-        $rep->contents = array();
+        $rep->contents = [];
 
         foreach ($old_trace as $frame) {
             $index = $frame->name;
@@ -78,7 +79,7 @@ class TracePlugin extends Plugin
                 continue;
             }
 
-            $rep->contents[$index] = new TraceFrameObject($frame, $trace[$index]);
+            $rep->contents[$index] = new TraceFrameValue($frame, $trace[$index]);
         }
 
         \ksort($rep->contents);
