@@ -129,7 +129,7 @@ class RichRenderer extends Renderer
     public static $sort = self::SORT_NONE;
 
     public static $needs_pre_render = true;
-    public static $needs_folder_render = true;
+    public static $needs_folder_render = false;
 
     public static $always_pre_render = false;
 
