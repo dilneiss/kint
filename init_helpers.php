@@ -41,6 +41,26 @@ if (!\function_exists('d')) {
     Kint::$aliases[] = 'd';
 }
 
+if (\function_exists('ddd')) {
+    unregister_tick_function ( 'ddd' );
+}
+
+if (!\function_exists('ddd')) {
+    /**
+     * Alias of Kint::dump().
+     *
+     * @return int|string
+     */
+    function ddd()
+    {
+        $args = \func_get_args();
+
+        return exit(\call_user_func_array(array('Kint', 'dump'), $args));
+    }
+
+    Kint::$aliases[] = 'ddd';
+}
+
 if (!\function_exists('s')) {
     /**
      * Alias of Kint::dump(), however the output is in plain text.
